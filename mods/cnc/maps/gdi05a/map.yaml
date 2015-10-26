@@ -1,21 +1,88 @@
+# This is a heavily commented mission definition to illustrate how OpenRA singleplayer missions and
+# multiplayer maps are scripted.
+#
+# If you haven't already played the mission ("Repair the GDI base (a)"), we recommend you play it before
+# reading further.
+#
+# We then recommend you start to read the contents of this file and to look at the resulting map in the OpenRA
+# editor and to move onto gdi05a.lua only afterwards.
+#
+# Singleplayer missions consist of multiple files:
+#
+# - map.bin and map.yaml are created by the OpenRA editor (when creating a mission from scratch) or by
+#   OpenRa.Utility (when converting an existing mission). OpenRA parses map.yaml at the same time as map.bin;
+#   map.bin contains the terrain definitions (water, shore, cliffs, most debris) in binary format, the human-
+#   readable yaml file contains overlays (trees, buildings and units).
+#
+# - map.png is the preview shown in the mission selector. If map.png is missing, a preview of the map is
+#   generated and shown instead.
+#
+# - *.lua files are mission scripts with an arbitrary name defined in map.yaml.
+#
+# - (optionally:) files with custom tile definitions, overlays or audio
+#
+# If the YAML file cannot be parsed it will not show up in the mission selector. The same does not apply to
+# Lua scripts: the mission will attempt to execute the Lua code and will crash in-game if a problem exists
+# with the Lua code.
+#
+# Comments in YAML begin with a '#' and run until the end of the line. YAML does not support comments spanning
+# multiple lines.
+#
+# Missions can either exist as single files within a folder (as with the present mission), or within .oramap
+# files (used mainly for multiplayer maps). .oramap files are .zip files which contain the same file types as
+# unpacked files and can be changed by renaming them to .zip
+#
+# To test changes, edit&save the files containt the mission data, then re-start the mission (there is no need
+# to exit OpenRA).
+#
+# Note that proper indendation through tabulators is important for .lua and .yaml files: a common error when
+# testing changes stems from using multiple spaces instead of tabulators.
+#
+# Finally, a word of caution: upon saving a mission in the OpenRa editor, all comments in map.yaml will be
+# removed, so we recommend keeping a backup of this file.
+#
+# An annotated list of settings for the mission follows below.
+
+# The following line contains the map version; it is set by the OpenRA editor or by OpenRA.Utility and should
+# not be changed manually.
 MapFormat: 7
 
+# RequiresMod defines which mod is needed to parse the map; for Tiberian Dawn this is 'cnc'.
+# This setting should not be changed manually.
 RequiresMod: cnc
 
+# The title identifies the mission in the mission selector:
 Title: Repair the GDI base (a)
 
+# The description contains the mission briefing. \n may be used to insert a line break, otherwise the text
+# will wrap in the description box:
 Description: A GDI field base is under attack. They have fended off one attack but will not survive another.\n\nMove to the base, repair the structures and then launch a strike force to destroy the Nod base in the area.\n\nDestroy all Nod units and structures.
 
+# The author field identifies the person or entity responsible for the mission. Missions from the original
+# C&C games are credited to Westwood Studios:
 Author: Westwood Studios
 
+# This defines the tileset (valid values for the Tiberium Dawn mod: DESERT, WINTER, TEMPERATE, JUNGLE, SNOW).
+# Changing this will not crash the game but may cause missing tiles in-game because not all tilesets contain
+# graphic assets for every tile.
 Tileset: TEMPERAT
 
+# The mapsize is set by the OpenRA editor or OpenRA.Utility and should not be changed manually.
 MapSize: 64,64
 
+# This defines the smaller area inside MapSize wich is available to the player in-game (the area outside will
+# be shaded darker in the OpenRA editor):
 Bounds: 8,21,49,39
 
+# Defines in which dialog the mission is shown. Valid options are:
+#   MissionSelector      (mission is shown in the singleplayer campaign)
+#   Lobby                (mission is shown in the multiplayer map selection)
+#   Shellmap             (mission is not shown in any dialog; used only to display the map behind the menus)
 Visibility: MissionSelector
 
+# Defines the mission category in the mission browser; this is an arbitrary string, but common strings are:
+# Campaign (for singleplayer missions)
+# Conquest (for multiplayer missions)
 Type: Campaign
 
 Videos:
@@ -26,17 +93,23 @@ Videos:
 	GameLost: gdilose.vqa
 
 Options:
-	Crates: False
-	Creeps: False
-	Fog: True
-	Shroud: True
-	AllyBuildRadius: False
-	FragileAlliances: False
-	StartingCash: 2000
-	ConfigurableStartingUnits: False
-	Difficulties: Easy, Normal, Hard
-	ShortGame: False
+	Crates: False           # If set to "True", crates with upgrades will occasionally show up on the map. This is always set to "False" in single-player missions.
+	Creeps: False           # If set to "True", infantry which died by Tiberium poisoning will occasionally re-spawn as a Viceroid. Always "False" in single-player missions.
+	Fog: True               # This enables fog of war (the player may reveal the terrain, but will not see enemy units when no own unit is nearby).
+	Shroud: True            # This hides the terrain (the player has to discover the terrain layout first).
+	AllyBuildRadius: False  # Allows building structures near allied construction yards. Always set to "False" in single-player missions.
+	FragileAlliances: False # Allows ending an alliance with other players and to attack them. Always set to "False" in single-player missions.
+	StartingCash: 2000      # Cash available to all players (both human- and AI-controlled) at the beginning of a mission.
+	                        # The amount of cash may also be changed dynamically using Lua at any point during the mission.
+	ConfigurableStartingUnits: False # Allows the player to select if they only start with MCV or with support units in multiplayer games. Always set to "False" in single-player missions.
+	Difficulties: Easy, Normal, Hard # Difficulty settings (optional). "Easy, Normal, Hard" are three arbitrary strings which are shown in the mission selector and may be queried using Lua.
+	ShortGame: False        # Defines if the player has to destroy all enemy units and structures to win the mission or if only the most important buildings need to be destroyed.
+	                        # This is almost always set to "False" in single-player missions, and winning conditions are tested using Lua.
 
+# The next section defines the players in a mission.
+# Note that the abandoned base is a different player from the player's GDI so that it cannot be controlled at
+# mission start.
+# The 'Neutral' player is used as the owner of actors like trees.
 Players:
 	PlayerReference@Nod:
 		Name: Nod
@@ -68,10 +141,13 @@ Players:
 		NonCombatant: True
 		Faction: gdi
 
+# The 'Actors' section defines all units, structures and decoration on the map at mission start which are not defined in the binary map.bin
 Actors:
-	Actor0: sbag
-		Location: 53,59
-		Owner: GDI
+	Actor0: sbag            # Sandbag
+		Location: 53,59       # Location (x,y) from the top-left corner of the map defined in 'MapSize' above (not the values defined in 'Bounds')
+		Owner: GDI            # Who controls the unit (for mobile units and structures).
+		                      # Sandbags/Walls/Fences around the player's or the AI's base should be assigned to their respective players, otherwise
+		                      # tanks may crush their own base defences.
 	Actor1: sbag
 		Location: 52,59
 		Owner: GDI
@@ -288,7 +364,7 @@ Actors:
 	Actor72: sbag
 		Location: 8,21
 		Owner: Nod
-	Actor73: t01
+	Actor73: t01             # Tree
 		Location: 12,38
 		Owner: Neutral
 	Actor74: t01
@@ -638,9 +714,9 @@ Actors:
 		Owner: Nod
 		Facing: 96
 		SubCell: 4
-	waypoint27: waypoint
+	waypoint27: waypoint            # Waypoints are invisible actors which are used as location markers
 		Location: 32,41
-		Owner: Neutral
+		Owner: Neutral                # It does not matter who owns a waypoint, so waypoints are mostly assigned to the 'Neutral' player
 	waypoint26: waypoint
 		Location: 8,50
 		Owner: Neutral
@@ -683,28 +759,29 @@ Actors:
 	waypoint0: waypoint
 		Location: 36,28
 		Owner: Neutral
-	GdiProc: proc
+	GdiProc: proc                 # Tiberium Refinery
 		Location: 50,51
 		Owner: AbandonedBase
-		Health: 31
-		FreeActor: False
-	GdiHarv: harv
+		Health: 31                  # Structure/unit health (100 = full health)
+		FreeActor: False            # By default, the refinery will spawn a harvester on mission start, this setting disables creation of the harvester
+		                            # since it is placed on the map manually:
+	GdiHarv: harv                 # Harvester
 		Location: 48,53
 		Owner: AbandonedBase
 		Facing: 64
-	GdiWeap: weap
+	GdiWeap: weap                 # Weapon factory
 		Location: 50,54
 		Owner: AbandonedBase
 		Health: 27
-	GdiNuke1: nuke
+	GdiNuke1: nuke                # Power Plant
 		Location: 53,55
 		Owner: AbandonedBase
 		Health: 29
-	GdiPyle: pyle
+	GdiPyle: pyle                 # Barracks
 		Location: 46,55
 		Owner: AbandonedBase
 		Health: 25
-	GdiSilo1: silo
+	GdiSilo1: silo                # Silo
 		Location: 53,51
 		Owner: AbandonedBase
 		Health: 33
@@ -773,6 +850,7 @@ Actors:
 		Location: 44,40
 		Owner: Neutral
 
+# Defines battle damage decoration on the map; usually added using the map editor
 Smudges:
 	sc4 41,55 0:
 	cr1 41,54 0:
@@ -784,6 +862,7 @@ Smudges:
 	sc4 45,50 0:
 	sc6 49,48 0:
 
+# Rules/settings for the map
 Rules:
 	World:
 		-SpawnMPUnits:
